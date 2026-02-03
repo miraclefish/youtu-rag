@@ -99,7 +99,7 @@ All related components support local deployment, data stays within domain. Integ
 </table>
 
 <p align="center" style="margin-top: 40px;">
-  <img src="docs/assets/Youtu-RAG.png" alt="Youtu-RAG Architecture" width="90%">
+  <img src="docs/assets/Youtu-RAG.png" alt="Youtu-RAG Architecture" width="100%">
 </p>
 
 ## 📖 Usage Examples
