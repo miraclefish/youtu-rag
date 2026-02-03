@@ -4,10 +4,10 @@
 
 <div align="center">
 
-[![Python Version](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
+[![Python Version](https://img.shields.io/badge/python-3.12+-blue.svg)]()
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Documentation](https://img.shields.io/badge/docs-online-brightgreen.svg)](docs/)
-[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)]()
 
 [English](README.md) | 简体中文 
 
@@ -31,6 +31,7 @@
 
 传统 RAG 系统遵循"离线切块-向量检索-拼接生成"的固定流程，长期面临**隐私风险、记忆缺失与检索僵化**等核心瓶颈。Youtu-RAG 旨在将系统从被动的检索工具升级为**具备自主决策与记忆学习能力的智能检索增强生成系统**。
 
+<a id="核心特性"></a>
 ## ✨ 核心特性
 
 <table>
@@ -67,7 +68,7 @@
 </td>
 <td width="50%" valign="top">
 
-### 🤖 8种开箱即用Agent
+### 🤖 开箱即用Agent
 
 从简单对话到复杂编排，覆盖多种应用级场景。支持Web Search、KB Search、Meta Retrieval、Excel Research、Text2SQL等智能体
 
@@ -102,6 +103,7 @@
   <img src="docs/assets/Youtu-RAG.png" alt="Youtu-RAG Architecture" width="100%">
 </p>
 
+<a id="使用示例"></a>
 ## 📖 使用示例
 
 ### 1️⃣ 文件管理
@@ -490,6 +492,7 @@ metadata_extraction: # 元数据提取，默认开启
   </tr>
 </table>
 
+<a id="快速开始"></a>
 ## 🚀 快速开始
 
 ### 环境要求
@@ -511,8 +514,8 @@ MinIO是一个高性能对象存储服务，用于存储上传的文档文件（
 | 模型 | HuggingFace | 部署方法 | 是否必选 |
 |:---|:---|:---|:---:|
 | [Youtu-Embedding ](https://github.com/TencentCloudADP/youtu-embedding) | [HuggingFace](https://huggingface.co/tencent/Youtu-Embedding) | [部署文档](https://xxxxxx) | ✅ 必选，或其他 Embedding API 服务 |
-| [Youtu-Parsing](https://github.com/TencentCloudADP/youtu-parsing) | [HuggingFace](https://huggingface.co/spaces/tencent/Youtu-Parsing) | [部署文档](https://xxxxxx) | ⭕ 可选 |
-| [Youtu-HiChunk](https://github.com/TencentCloudADP/hichunk) | [HuggingFace](https://huggingface.co/spaces/tencent/HiChunk) | [部署文档](https://xxxx) | ⭕ 可选 |
+| [Youtu-Parsing](https://github.com/TencentCloudADP/youtu-parsing) | [HuggingFace](https://huggingface.co/tencent/Youtu-Parsing) | [部署文档](https://xxxxxx) | ⭕ 可选 |
+| [Youtu-HiChunk](https://github.com/TencentCloudADP/hichunk) | [HuggingFace](https://huggingface.co/tencent/Youtu-HiChunk) | [部署文档](https://xxxx) | ⭕ 可选 |
 
 
 ### 一键安装 Youtu-RAG 系统
@@ -594,6 +597,7 @@ uv run uvicorn utu.rag.api.main:app --reload --host 0.0.0.0 --port 8000
 
 ---
 
+<a id="评测基准"></a>
 ## 📊 评测基准
 
 Youtu-RAG提供完整的评测体系，支持多维度能力验证。
@@ -731,12 +735,6 @@ Youtu-RAG 基于多个开源项目的卓越成果构建而成：
 - **[Sequential-NIAH](https://aclanthology.org/2025.emnlp-main.1497.pdf)**：（Benchmark）长文档多点信息抽取、顺序信息提取
 
 特别感谢所有为本项目贡献代码、提出建议和报告问题的开发者！
-
-## 📞 联系我们
-
-- **GitHub Issues**：[提交Issue](https://github.com/TencentCloudADP/youtu-rag/issues)
-- **讨论区**：[GitHub Discussions](https://github.com/TencentCloudADP/youtu-rag/discussions)
-- **文档**：[在线文档](docs/)
 
 ## 📚 引用
 

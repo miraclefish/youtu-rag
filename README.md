@@ -4,10 +4,10 @@
 
 <div align="center">
 
-[![Python Version](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
+[![Python Version](https://img.shields.io/badge/python-3.12+-blue.svg)]()
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Documentation](https://img.shields.io/badge/docs-online-brightgreen.svg)](docs/)
-[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)]()
 
 English | [简体中文](README_ZH.md) 
 
@@ -31,6 +31,7 @@ English | [简体中文](README_ZH.md)
 
 Traditional RAG systems follow a fixed pipeline of "offline chunking - vector retrieval - concatenation generation," facing core bottlenecks such as **privacy risks, memory loss, and rigid retrieval**. Youtu-RAG aims to upgrade the system from a passive retrieval tool to an **intelligent retrieval-augmented generation system with autonomous decision and memory learning capabilities**.
 
+<a id="key-features"></a>
 ## ✨ Key Features
 
 <table>
@@ -102,6 +103,7 @@ All related components support local deployment, data stays within domain. Integ
   <img src="docs/assets/Youtu-RAG.png" alt="Youtu-RAG Architecture" width="100%">
 </p>
 
+<a id="usage-examples"></a>
 ## 📖 Usage Examples
 
 ### 1️⃣ File Management
@@ -490,6 +492,7 @@ When OCR and HiChunk configurations are enabled, the parsing phase of document u
   </tr>
 </table>
 
+<a id="quick-start"></a>
 ## 🚀 Quick Start
 
 ### Environment Requirements
@@ -511,8 +514,8 @@ For installation instructions, please refer to the official [MinIO repository](h
 | Model | HuggingFace | Deployment Method | Required |
 |:---|:---|:---|:---:|
 | [Youtu-Embedding ](https://github.com/TencentCloudADP/youtu-embedding) | [HuggingFace](https://huggingface.co/tencent/Youtu-Embedding) | [Deployment Docs](https://xxxxxx) | ✅ Required, or other Embedding API services |
-| [Youtu-Parsing](https://github.com/TencentCloudADP/youtu-parsing) | [HuggingFace](https://huggingface.co/spaces/tencent/Youtu-Parsing) | [Deployment Docs](https://xxxxxx) | ⭕ Optional |
-| [Youtu-HiChunk](https://github.com/TencentCloudADP/hichunk) | [HuggingFace](https://huggingface.co/spaces/tencent/HiChunk) | [Deployment Docs](https://xxxx) | ⭕ Optional |
+| [Youtu-Parsing](https://github.com/TencentCloudADP/youtu-parsing) | [HuggingFace](https://huggingface.co/tencent/Youtu-Parsing) | [Deployment Docs](https://xxxxxx) | ⭕ Optional |
+| [Youtu-HiChunk](https://github.com/TencentCloudADP/hichunk) | [HuggingFace](https://huggingface.co/tencent/Youtu-HiChunk) | [Deployment Docs](https://xxxx) | ⭕ Optional |
 
 ### One-Click Installation of Youtu-RAG System
 
@@ -594,6 +597,7 @@ After successful startup, access the following addresses:
 ---
 
 
+<a id="benchmarks"></a>
 ## 📊 Benchmarks
 
 Youtu-RAG provides a complete evaluation system, supporting multi-dimensional capability verification.
@@ -730,12 +734,6 @@ Youtu-RAG builds upon the excellent work of several open-source projects:
 - **[Sequential-NIAH](https://aclanthology.org/2025.emnlp-main.1497.pdf)**: Benchmark of long document multi-point information extraction, sequential information extraction
 
 Special thanks to all developers who contributed code, suggestions, and reported issues to this project!
-
-## 📞 Contact Us
-
-- **GitHub Issues**: [Submit Issue](https://github.com/TencentCloudADP/youtu-rag/issues)
-- **Discussion Forum**: [GitHub Discussions](https://github.com/TencentCloudADP/youtu-rag/discussions)
-- **Documentation**: [Online Documentation](docs/)
 
 ## 📚 Citation
 
