@@ -58,7 +58,7 @@ export function middleware(request: NextRequest) {
 
   const locale = resolveLocale(request);
 
-  // Redirect root path to /about.html
+  // Redirect root path to /about.html (handle this before language prefix logic)
   if (pathname === '/' || pathname === '') {
     const url = request.nextUrl.clone();
     url.pathname = '/about.html';
@@ -110,8 +110,11 @@ export function middleware(request: NextRequest) {
     return response;
   }
 
+  // Redirect /en or /zh to /about.html (disable the old landing page)
   if (/^\/(en|zh)(\/|$)/.test(pathname)) {
-    return NextResponse.next();
+    const url = request.nextUrl.clone();
+    url.pathname = '/about.html';
+    return NextResponse.redirect(url);
   }
 
   const url = request.nextUrl.clone();

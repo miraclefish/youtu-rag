@@ -1002,8 +1002,15 @@
 
     // Initialize i18n
     document.addEventListener('DOMContentLoaded', () => {
-      // Get current language from localStorage (default to English)
-      let currentLang = localStorage.getItem('app_language') || 'en';
+      // Determine language: localStorage > browser language > default English
+      let currentLang = localStorage.getItem('app_language');
+      
+      if (!currentLang) {
+        // First time visit, detect browser language
+        const browserLang = navigator.language || navigator.userLanguage;
+        // Default to English unless browser language contains 'zh'
+        currentLang = browserLang.toLowerCase().includes('zh') ? 'zh' : 'en';
+      }
       
       // Apply translations
       updatePageLanguage(currentLang);
