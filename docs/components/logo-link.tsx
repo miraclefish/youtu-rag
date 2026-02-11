@@ -16,10 +16,9 @@ export function LogoLink() {
       style={{ cursor: 'pointer' }}
     >
       <Image
-        src="/assets/Youtu-RAG-logo.png"
+        src={getAssetPath('/assets/youtu-rag-logo.png')}
         alt="Youtu-RAG"
-        width={150}
-        height={40}
+        fill
         className="logo-image"
       />
     </div>
