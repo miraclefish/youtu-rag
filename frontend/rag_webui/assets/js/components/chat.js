@@ -932,6 +932,11 @@ async function sendMessage() {
   const input = document.getElementById('chat-input');
   const sendBtn = document.getElementById('send-btn');
 
+  // DEBUG: Log selectedFileIds before sending
+  console.log(`[SendMessage] selectedFileIds:`, selectedFileIds);
+  console.log(`[SendMessage] selectedFilesData:`, selectedFilesData);
+  console.log(`[SendMessage] currentKbId:`, currentKbId);
+
   // If streaming, click to stop
   if (isStreaming) {
     stopAgent();
@@ -2683,17 +2688,47 @@ async function uploadFileWithProgress(file) {
     // Poll progress
     await pollUploadProgress(taskId, progressCard);
 
-    // After upload completes, add to attachedFiles array
-    attachedFiles.push({
-      filename: file.name,
-      taskId: taskId
-    });
-
-    // Render file tags
-    renderFileTags();
-
     // Associate file with knowledge base
+    console.log(`[File Upload] Associating file "${file.name}" to KB ${currentKbId}`);
     await associateFilesToKb([file.name]);
+    console.log(`[File Upload] Association completed`);
+
+    // Wait for DB commit (small delay to ensure consistency)
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    // Refresh KB files and auto-select uploaded file
+    if (currentKbId) {
+      console.log(`[File Upload] Refreshing KB files for KB ${currentKbId}`);
+      await loadKnowledgeBaseFiles(currentKbId);
+      
+      console.log(`[File Upload] Current knowledgeBaseFiles:`, knowledgeBaseFiles);
+      const uploadedFile = knowledgeBaseFiles.find(f => (f.name || f.filename) === file.name);
+      
+      if (uploadedFile) {
+        const uploadedId = uploadedFile.id;
+        console.log(`[File Upload] Found uploaded file in KB: ${uploadedFile.name || uploadedFile.filename} (ID: ${uploadedId})`);
+        
+        const alreadySelected = selectedFilesData.some(f => f.id === uploadedId);
+        if (!alreadySelected) {
+          selectedFilesData.push({
+            id: uploadedId,
+            name: uploadedFile.name || uploadedFile.filename
+          });
+          selectedFileIds = selectedFilesData.map(f => f.id);
+          renderSelectedFilesTags();
+          updateSendButtonState();
+          console.log(`[File Upload] Auto-selected file: ${uploadedFile.name || uploadedFile.filename} (ID: ${uploadedId})`);
+          console.log(`[File Upload] selectedFileIds:`, selectedFileIds);
+        } else {
+          console.log(`[File Upload] File already selected`);
+        }
+      } else {
+        console.warn(`[File Upload] Uploaded file "${file.name}" not found in KB files after refresh`);
+        console.warn(`[File Upload] Available files:`, knowledgeBaseFiles.map(f => f.name || f.filename));
+      }
+    } else {
+      console.warn(`[File Upload] No KB selected (currentKbId is null)`);
+    }
 
     console.log(`[File Upload] Upload complete: ${file.name}`);
 
