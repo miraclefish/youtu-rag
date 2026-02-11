@@ -22,22 +22,29 @@ class SmartTableProcessor:
         if not HAS_OPENPYXL:
             raise ImportError("openpyxl required. Install: pip install openpyxl")
     
-    def process_excel(self, file_path: str) -> Tuple[pd.DataFrame, Dict]:
+    def process_excel(self, file_path: str, sheet_name: Optional[str] = None) -> Tuple[pd.DataFrame, Dict]:
         """
         智能处理Excel文件
+        
+        Args:
+            file_path: Excel文件路径
+            sheet_name: 指定sheet名称（可选，None表示使用active sheet）
         
         Returns:
             (cleaned_df, metadata)
         """
         
         # 1. 检测表格结构
-        structure = self._detect_structure(file_path)
+        structure = self._detect_structure(file_path, sheet_name=sheet_name)
         
         # 2. 处理合并单元格
         if structure['has_merged_cells']:
-            df = self._process_merged_cells(file_path)
+            df = self._process_merged_cells(file_path, sheet_name=sheet_name)
         else:
-            df = pd.read_excel(file_path)
+            if sheet_name:
+                df = pd.read_excel(file_path, sheet_name=sheet_name)
+            else:
+                df = pd.read_excel(file_path)
         
         # 3. 检测并跳过表头行
         header_end_row = self._detect_header_end(df)
@@ -45,7 +52,7 @@ class SmartTableProcessor:
             df = df.iloc[header_end_row:].reset_index(drop=True)
         
         # 4. 智能提取列名
-        df = self._extract_column_names(df, file_path, header_end_row)
+        df = self._extract_column_names(df, file_path, header_end_row, sheet_name=sheet_name)
         
         # 5. 清理数据
         df = self._clean_data(df)
@@ -61,11 +68,24 @@ class SmartTableProcessor:
         
         return df, metadata
     
-    def _detect_structure(self, file_path: str) -> Dict:
-        """检测表格结构"""
+    def _detect_structure(self, file_path: str, sheet_name: Optional[str] = None) -> Dict:
+        """检测表格结构
+        
+        Args:
+            file_path: Excel文件路径
+            sheet_name: Sheet名称（可选）
+        """
         
         wb = openpyxl.load_workbook(file_path, data_only=False)
-        ws = wb.active
+        
+        if sheet_name:
+            if sheet_name in wb.sheetnames:
+                ws = wb[sheet_name]
+            else:
+                # Fallback to active sheet
+                ws = wb.active
+        else:
+            ws = wb.active
         
         # 检测合并单元格
         has_merged = len(list(ws.merged_cells.ranges)) > 0
@@ -76,11 +96,23 @@ class SmartTableProcessor:
             "total_cols": ws.max_column
         }
     
-    def _process_merged_cells(self, file_path: str) -> pd.DataFrame:
-        """处理合并单元格"""
+    def _process_merged_cells(self, file_path: str, sheet_name: Optional[str] = None) -> pd.DataFrame:
+        """处理合并单元格
+        
+        Args:
+            file_path: Excel文件路径
+            sheet_name: Sheet名称（可选）
+        """
         
         wb = openpyxl.load_workbook(file_path, data_only=False)
-        ws = wb.active
+        
+        if sheet_name:
+            if sheet_name in wb.sheetnames:
+                ws = wb[sheet_name]
+            else:
+                ws = wb.active
+        else:
+            ws = wb.active
         
         # 取消合并并填充值
         merged_ranges = list(ws.merged_cells.ranges)
@@ -107,7 +139,7 @@ class SmartTableProcessor:
             temp_path = tmp.name
             wb.save(temp_path)
         
-        df = pd.read_excel(temp_path)
+        df = pd.read_excel(temp_path, sheet_name=sheet_name if sheet_name else 0)
         os.unlink(temp_path)
         
         return df
@@ -152,9 +184,15 @@ class SmartTableProcessor:
         
         return False
     
-    def _extract_column_names(self, df: pd.DataFrame, file_path: str, header_end_row: int) -> pd.DataFrame:
+    def _extract_column_names(self, df: pd.DataFrame, file_path: str, header_end_row: int, sheet_name: Optional[str] = None) -> pd.DataFrame:
         """
         智能提取列名 - 从多行header中合并信息
+        
+        Args:
+            df: DataFrame
+            file_path: 原始文件路径
+            header_end_row: 表头结束行
+            sheet_name: Sheet名称（可选）
         
         策略：
         1. 从header区域提取所有有意义的值
@@ -164,7 +202,10 @@ class SmartTableProcessor:
         
         if header_end_row > 0:
             # 重新读取原始文件的header部分
-            df_raw = pd.read_excel(file_path)
+            if sheet_name:
+                df_raw = pd.read_excel(file_path, sheet_name=sheet_name)
+            else:
+                df_raw = pd.read_excel(file_path)
             header_rows = df_raw.iloc[:header_end_row]
             
             new_columns = []
@@ -366,8 +407,11 @@ class SmartTableProcessor:
                 if valid_ratio > 0.5:
                     return converted
             
-            # 否则尝试直接转换
-            return pd.to_numeric(series, errors='ignore')
+            # 否则尝试直接转换，如果失败则返回原series
+            try:
+                return pd.to_numeric(series, errors='raise')
+            except (ValueError, TypeError):
+                return series
         except:
             return series
 

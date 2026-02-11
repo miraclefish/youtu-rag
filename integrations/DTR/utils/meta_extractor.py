@@ -157,17 +157,19 @@ class MetaExtractor:
                 for col in range(min_col, max_col + 1):
                     worksheet.cell(row, col).value = top_left_value
     
-    def extract_meta_info(self, file_path: str, max_headers: int = 30, preprocess_merged: bool = True) -> Dict[str, Any]:
+    def extract_meta_info(self, file_path: str, max_headers: int = 30, preprocess_merged: bool = True, sheet_name: Optional[str] = None) -> Dict[str, Any]:
         """从Excel文件中提取meta信息
         
         Args:
             file_path: Excel文件路径
             max_headers: 最多提取多少个列表头
             preprocess_merged: 是否预处理合并单元格（取消合并并填充）
+            sheet_name: 指定sheet名称（可选，None表示使用active sheet）
             
         Returns:
             meta_info字典，包含：
             - file_path: 文件路径
+            - sheet_name: Sheet名称
             - merged_cells: 合并单元格信息
             - col_headers: 列表头信息
             - hierarchy_triplets: 层级关系三元组
@@ -178,6 +180,7 @@ class MetaExtractor:
             return {
                 "error": f"File not found: {file_path}",
                 "file_path": file_path,
+                "sheet_name": sheet_name,
                 "merged_cells": [],
                 "col_headers": [],
                 "hierarchy_triplets": [],
@@ -187,7 +190,23 @@ class MetaExtractor:
         try:
             # 加载Excel文件
             workbook = openpyxl.load_workbook(file_path, data_only=False)
-            worksheet = workbook.active
+            
+            # 选择worksheet
+            if sheet_name:
+                if sheet_name not in workbook.sheetnames:
+                    return {
+                        "error": f"Sheet '{sheet_name}' not found in file",
+                        "file_path": file_path,
+                        "sheet_name": sheet_name,
+                        "merged_cells": [],
+                        "col_headers": [],
+                        "hierarchy_triplets": [],
+                        "summary": f"Sheet not found. Available sheets: {workbook.sheetnames}"
+                    }
+                worksheet = workbook[sheet_name]
+            else:
+                worksheet = workbook.active
+                sheet_name = worksheet.title
             
             # 1. 检测合并单元格
             merged_cells = self._detect_merged_cells(worksheet)
@@ -242,8 +261,8 @@ class MetaExtractor:
                         temp_path = tmp.name
                         workbook.save(temp_path)
                     
-                    # 用pandas读取
-                    cleaned_df = pd.read_excel(temp_path)
+                    # 用pandas读取（指定sheet）
+                    cleaned_df = pd.read_excel(temp_path, sheet_name=sheet_name if sheet_name else 0)
                     
                     # 删除临时文件
                     os.unlink(temp_path)

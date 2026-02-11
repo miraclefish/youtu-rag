@@ -25,7 +25,11 @@ sys.path.insert(0, str(integration_root))
 
 from utils.llm_client import LLMClient
 from src.modules.smg_autonomous import SMGAutonomousModule
+from src.modules.multi_sheet_loader import MultiSheetLoader, MultiSheetContext
+from src.modules.sheet_state_manager import SheetStateManager
 from utils.logger import logger
+from utils.smart_table_processor import SmartTableProcessor
+from utils.meta_extractor import MetaExtractor
 
 from utu.agents.common import TaskRecorder, QueueCompleteSentinel
 from utu.tools.memory_toolkit import VectorMemoryToolkit
@@ -117,30 +121,130 @@ class ExcelAgent:
         }
     
     def load_data(self, table_file):
-        """加载数据"""
+        """加载数据（支持多sheet）
+        
+        Returns:
+            (multi_sheet_context, table_info_str)
+        """
         import pandas as pd
         logger.info(f"📂 加载表格: {table_file}")
         
-        if table_file.suffix == '.xlsx':
-            df = pd.read_excel(table_file)
-        else:
+        # 检查文件类型
+        if table_file.suffix not in ['.xlsx', '.xls', '.csv']:
+            raise ValueError(f"Unsupported file type: {table_file.suffix}")
+        
+        # CSV文件：转换为单sheet的MultiSheetContext
+        if table_file.suffix == '.csv':
             df = pd.read_csv(table_file)
+            
+            if df is None or df.empty:
+                logger.error("❌ 表格加载失败或为空")
+                return None, None
+            
+            # 创建单sheet的context
+            from src.modules.multi_sheet_loader import SheetState, MultiSheetContext
+            
+            state = SheetState(
+                name="Sheet1",
+                original_df=df.copy(),
+                current_df=df.copy(),
+                metadata={
+                    "sheet_name": "Sheet1",
+                    "shape": df.shape,
+                    "columns": list(df.columns),
+                    "dtypes": {col: str(dtype) for col, dtype in df.dtypes.items()}
+                }
+            )
+            
+            context = MultiSheetContext(
+                file_path=str(table_file),
+                sheet_states={"Sheet1": state},
+                default_sheet="Sheet1",
+                total_sheets=1
+            )
+            
+            # 生成表格信息
+            table_info = self._generate_table_info(context)
+            return context, table_info
         
-        if df is None or df.empty:
-            logger.error("❌ 表格加载失败或为空")
-            return
+        # Excel文件：使用MultiSheetLoader加载
+        try:
+            # 初始化处理器
+            processor = SmartTableProcessor()
+            meta_extractor = MetaExtractor()
+            
+            # 加载所有sheet
+            loader = MultiSheetLoader(max_preview_rows=6)
+            context = loader.load_excel_file(
+                str(table_file),
+                processor=processor,
+                meta_extractor=meta_extractor
+            )
+            
+            # 生成表格信息
+            table_info = self._generate_table_info(context)
+            
+            return context, table_info
+            
+        except Exception as e:
+            logger.error(f"❌ 多sheet加载失败: {e}")
+            # Fallback: 尝试简单加载
+            try:
+                df = pd.read_excel(table_file)
+                
+                from src.modules.multi_sheet_loader import SheetState, MultiSheetContext
+                
+                state = SheetState(
+                    name="Sheet1",
+                    original_df=df.copy(),
+                    current_df=df.copy(),
+                    metadata={
+                        "sheet_name": "Sheet1",
+                        "shape": df.shape,
+                        "columns": list(df.columns),
+                        "dtypes": {col: str(dtype) for col, dtype in df.dtypes.items()}
+                    }
+                )
+                
+                context = MultiSheetContext(
+                    file_path=str(table_file),
+                    sheet_states={"Sheet1": state},
+                    default_sheet="Sheet1",
+                    total_sheets=1
+                )
+                
+                table_info = self._generate_table_info(context)
+                return context, table_info
+                
+            except Exception as e2:
+                logger.error(f"❌ Fallback加载也失败: {e2}")
+                return None, None
+    
+    def _generate_table_info(self, context: MultiSheetContext) -> str:
+        """生成表格信息字符串（用于日志）"""
+        lines = []
+        lines.append(f"📁 文件: {Path(context.file_path).name}")
+        lines.append(f"📊 Sheets: {context.total_sheets}")
         
-        # 显示表格基本信息
-        tabel_info = ""
-        tabel_info += f"📁 文件: {table_file.name}\n"
-        tabel_info += f"📊 维度: {df.shape[0]} 行 × {df.shape[1]} 列\n"
-        tabel_info += f"🏷️  列名: {', '.join(df.columns.tolist())}\n"
-        tabel_info += f"\n数据类型:\n"
-        for col, dtype in df.dtypes.items():
-            tabel_info += f"  • {col}: {dtype}\n"
-        tabel_info += f"\n数据预览 (前5行):\n"
-        tabel_info += df.head().to_string()
-        return df, tabel_info
+        for sheet_name, state in context.sheet_states.items():
+            df = state.current_df
+            prefix = "→" if sheet_name == context.default_sheet else " "
+            lines.append(f"\n{prefix} Sheet '{sheet_name}':")
+            lines.append(f"  维度: {df.shape[0]} 行 × {df.shape[1]} 列")
+            lines.append(f"  列名: {', '.join(df.columns.tolist()[:10])}")
+            if len(df.columns) > 10:
+                lines.append(f"       ... ({len(df.columns) - 10} more columns)")
+            
+            lines.append(f"\n  数据类型:")
+            for col, dtype in list(df.dtypes.items())[:5]:
+                lines.append(f"    • {col}: {dtype}")
+            if len(df.dtypes) > 5:
+                lines.append(f"    ... ({len(df.dtypes) - 5} more columns)")
+            
+            lines.append(f"\n  数据预览 (前5行):")
+            lines.append(df.head().to_string())
+        
+        return "\n".join(lines)
 
     def run_streamed(self, input, question_type=None, use_memory: bool = True) -> ExcelAgentRecorder:
         """流式运行查询"""
@@ -224,19 +328,38 @@ class ExcelAgent:
                 )
             )
 
-            df, tabel_info = self.load_data(file_path)
             recorder._event_queue.put_nowait(
                 ExcelAgentStreamEvent(
                     name="excel_agent.plan.delta",
                     item={
-                        "content": tabel_info
+                        "content": "Loading data..."
+                    }
+                )
+            )
+
+            # 加载数据（支持多sheet）
+            context, table_info = await asyncio.to_thread(self.load_data, file_path)
+            
+            if context is None:
+                raise ValueError("Failed to load data")
+            
+            recorder._event_queue.put_nowait(
+                ExcelAgentStreamEvent(
+                    name="excel_agent.plan.delta",
+                    item={
+                        "content": table_info,
+                        "clean": True
                     }
                 )
             )
 
             # 构建metadata
             sub_q_type = question_type or ""  # 如果没有提供，使用空字符串
-            max_iterations = self.config.get('config', {}).get('max_iterations', 10)  # 从配置读取，默认30
+            max_iterations = self.config.get('config', {}).get('max_iterations', 10)  # 从配置读取，默认10
+            
+            # 从context提取metadata（使用默认sheet的信息）
+            default_state = context.get_state(context.default_sheet)
+            df = default_state.current_df
             
             metadata = {
                 "column_names": list(df.columns),
@@ -244,7 +367,11 @@ class ExcelAgent:
                 "row_count": len(df),
                 "shape": df.shape,
                 "question_type": question_type,
-                "sub_q_type": sub_q_type
+                "sub_q_type": sub_q_type,
+                # 添加多sheet信息
+                "total_sheets": context.total_sheets,
+                "sheet_names": context.get_sheet_names(),
+                "default_sheet": context.default_sheet
             }
 
             smg = self._build_workflow(event_callback=event_callback)
@@ -255,7 +382,7 @@ class ExcelAgent:
                     lambda: smg.execute_with_autonomous_loop(
                         operator_sequence=[],
                         operator_pool=[],
-                        dataframe=df,
+                        sheet_context=context,  # 传递MultiSheetContext
                         user_query=question,
                         table_metadata=metadata,
                         schema_result=None,
@@ -328,8 +455,8 @@ class ExcelAgent:
 if __name__ == "__main__":
 
     async def main():
-        query = "Match the year where the employment in agriculture was the highest and state its corresponding total employed population in the year."
-        agent = ExcelAgent(config="integrations/deeptabularresearch_source/config/config.yaml")
+        query = "/Users/felix/Documents/GitProjects/YoutuRAG_Benchmark/data/data_0109/多表mini/excels/奥运会参赛队伍.xlsx"
+        agent = ExcelAgent(config="configs/agents/ragref/excel/excel.yaml")
         
         # 使用异步流式调用
         rec = agent.run_streamed(query)

@@ -381,7 +381,7 @@ class ChatService:
                     if event.name == "excel_agent.plan.start":  # Analysis starts
                         yield format_sse_event({
                             "type": StreamEventType.DELTA,
-                            "content": f"正在解析 Excel 表格 {event.item.get('file_path', '')}\n构建 Meta Graph...",
+                            "content": f"正在解析 Excel 表格 {event.item.get('file_path', '')} ...",
                             "timestamp": datetime.now().isoformat()
                         })
                     
@@ -389,6 +389,7 @@ class ChatService:
                         yield format_sse_event({
                             "type": StreamEventType.DELTA,
                             "content": f"\n{event.item.get("content", "")}",
+                            "clean": event.item.get("clean", False),
                             "timestamp": datetime.now().isoformat()
                         })
                     
